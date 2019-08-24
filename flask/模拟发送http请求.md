@@ -1,0 +1,5 @@
+- html中的form表单  (get,post)
+- JavaScript,jQuery,vue.js等等发送HTTP请求
+- 浏览器
+- 使用python模拟发送http
+- 工具: postman

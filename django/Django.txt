@@ -1,0 +1,257 @@
+Django
+
+开发环境
+
+Ubuntu  +  Python3  + Django1.11
+
+ubuntu中如何安装Python3
+
+如何在Ubuntu中使用虚拟环境？
+
+virtualenv
+
+pyenv + virtualenv
+
+从Hello World看Django
+
+路由
+
+什么是路由？
+
+和Flask的路由有什么区别？
+
+django:urls.py
+
+flask:  装饰器
+
+urlpatterns有什么用？
+
+urls中的一个可迭代对象
+
+每一个元素是url函数
+
+url方法有什么用？
+
+映射正则表达式和视图函数
+
+常见的正则表达式有哪些？
+
+\d
+
+(?P<page_number>[0-9]+)
+
+^
+
+$
+
+配置文件
+
+使用配置文件有什么好处？
+
+ALLOW_HOSTS有什么用？
+
+INSTALLED_APPS有什么用？
+
+视图
+
+视图的职责是什么？
+
+负责通过ORM从数据库获取相关数据
+
+如何是前后端分离,把获取的数据封装成JSON格式,返回给前端
+
+如果前后端不分离,把数据给相应的模板,然后由模板渲染数据
+
+模板
+
+为什么要使用模板？
+
+request和response
+
+request有哪些常见的属性？
+
+   -path
+
+   - method
+
+   - POST
+
+   - GET
+
+   - FILES
+
+   - session
+
+   - COOKIES
+
+response有哪些常见的属性？
+
+manage.py
+
+如何创建项目
+
+如何创建app
+
+项目和app有什么关系？
+
+如何创建超级用户？
+
+从TODO LIST项目看Django
+
+ORM
+
+什么是ORM?
+
+使用ORM有什么好处？
+
+ORM有哪些不足的地方？
+
+配置文件
+
+SECRET_KEY有什么用？
+
+ROOT_URLCONF有什么用？
+
+TEMPLATES['DIRS']有什么用？
+
+WSGI_APPLICATION有什么用？
+
+LANGUAGE_CODE有什么用？
+
+TIME_ZONE有什么用？
+
+LOGIN_URL有什么用？
+
+Model
+
+如何设计一对多关系
+
+makemigrations和migrate有什么区别？
+
+sqlmigrate命令有什么用？
+
+Task类和表有什么关系？
+
+Task类创建的对象和表中的记录有什么关系？
+
+路由
+
+什么是路由？
+
+如何在根路由中引入别的app的路由？
+
+视图
+
+如何判断请求方式
+
+如何使用Django内置的User模型
+
+如何跟踪会话
+
+如何防止CSRF攻击
+
+如何处理POST请求
+
+如何保存TODO
+
+如何获得某个用户创建的所有TODO
+
+如何重定向
+
+参数:函数名
+
+参数:路由地址
+
+如何传递参数到模板？
+
+如何使用反向解析
+
+模板中:  {%  url   'url_name' %}
+
+视图中:   reverse
+
+在模板中使用静态资源
+
+STATIC_URL有什么用？
+
+STATICFILES_DIRS有什么用？
+
+{%  load static %} 有什么用？
+
+{% static   'some_url...' %}有什么用？
+
+Django shell
+
+如何进入Django  shell
+
+python  manage.py  shell
+
+断点调试技巧
+
+什么是断点？
+
+如何添加断点？
+
+Django  CRUD 操作
+
+Create
+
+Retrieve
+
+Update
+
+Delete
+
+专题介绍
+
+Model relationships
+
+数据库中的E-R图
+
+一对一
+
+一个人       一个身份证
+
+一个 人     一个 妻子
+
+一对多（或 多对一）
+
+task   和  user
+
+article    和  user
+
+多对多
+
+微信群  和 微信成员
+
+课程    和  学生
+
+书    和   作者
+
+request
+
+如何发送request请求
+
+有哪些请求方法？
+
+GET
+
+POST
+
+DELETE
+
+PUT
+
+response
+
+HttpResponse
+
+render
+
+JsonResponse
+
+用于前后端分离，HTML5做前端，Django作为后端提供API（json格式）
+
+项目实战
+
+IT工作常识
