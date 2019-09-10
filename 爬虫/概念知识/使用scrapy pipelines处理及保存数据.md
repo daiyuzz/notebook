@@ -1,79 +1,6 @@
 ## 使用scrapy pipelines处理及保存数据
 
-### 命令行传参
-
-###### item.py
-
-```python
-
-
-class JobspiderItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    name = scrapy.Field()
-
-```
-
-
-
-
-
-```python
-# -*- coding: utf-8 -*-
-import scrapy
-from Jobspider.items import JobspiderItem
-
-class QcwySpider(scrapy.Spider):
-    name = 'qcwy'
-    allowed_domains = ['51job.com']
-    # start_urls = ['http://51job.com/']
-
-
-
-    def __init__(self,place=None,*args,**kwargs):
-        super(QcwySpider, self).__init__(*args,**kwargs)
-        if place is None:
-            self.place = '杭州'
-        else:
-            self.place = place
-
-        #与上面代码效果相同
-        # self.place="杭州" if not place else place
-
-    def start_requests(self):
-        urls=['https://search.51job.com/list/{place_code},000000,0000,00,9,99,python,2,1.html'.format(place_code=self.get_place_code())]
-
-        req = scrapy.Request(urls[0],callback=self.parse)
-        yield req
-
-    def get_place_code(self):
-        place_map = {
-            "杭州":"080200",
-            "上海":"020000",
-        }
-        return place_map.get(self.place)
-
-
-
-
-
-    def parse(self, response):
-        print(response.xpath('//title/text()'))
-		jobs = response.xpath('//*[@id="resultList"]/div[@class="el"]')
-        print(jobs)
-        for job in jobs:
-            name = job.xpath('.//p/span/a/text()').extract_first().strip()
-            item = JobspiderItem()
-            item['name'] = name
-            yield item
-
-```
-
-
-
-### 处理及保存数据
-
-###### pipelines.py
+### mysql及mongo存贮
 
 ```python
 # -*- coding: utf-8 -*-
@@ -206,3 +133,52 @@ ITEM_PIPELINES = {
 
 
 ###### #注：在mysql数据库中表和字段需要手动创建，而Mongodb则自动创建；
+
+
+
+### 时间处理
+
+例如：微博爬虫中处理微博发表时间
+
+```python
+class TimePipeline():                                              
+    def process_item(self,item,spider):                            
+        if isinstance(item,UserItem) or isinstance(item,WeiboItem):
+            now = time.strftime('%Y-%m-%d %H:%M',time.localtime()) 
+            item['crawled_at'] = now                               
+        return item                                                
+                                                                   
+```
+
+
+
+```python
+class WeiboscrapyPipeline(object):
+    def parse_time(self, date):
+        """格式化时间"""
+        if re.match('刚刚', date):
+            date = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time()))
+        if re.match('\d+分钟前', date):
+            minute = re.match('(\d+)', date).group(1)
+            date = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time() - float(minute) * 60))
+        if re.match('\d+小时前', date):
+            hour = re.match('(\d+)', date).group(1)
+            date = time.strftime('%Y-%m-%d %H:%M', time.localtime(time.time() - float(hour) * 60 * 60))
+        if re.match('昨天.*', date):
+            date = re.match('昨天(.*)', date).group(1).strip()
+            date = time.strftime('%Y-%m-%d', time.localtime() - 24 * 60 * 60) + ' ' + date
+        if re.match('\d{2}-\d{2}', date):
+            date = time.strftime('%Y-', time.localtime()) + date + '00:00'
+        return date
+
+    def process_item(self, item, spider):
+        if isinstance(item, WeiboItem):
+            if item.get('created_at'):
+                item['created_at'] = item['created_at'].strip()
+                item['created_at'] = self.parse_time(item.get('created_at'))
+            if item.get('pictures'):
+                item['pictures'] = [pic.get('url') for pic in item.get('pictures')]
+            return item
+
+```
+

@@ -293,7 +293,7 @@ sudo vi /etc/hostname
     scp ~/.ssh/id_rsa.pub gavin@miguo: ~/.ssh/authorized_keys
     ```
 
-    ​
+    
 
     3）把public key的权限设置为600
 
@@ -407,7 +407,7 @@ sudo vi /etc/hostname
     gavin@ubuntu:~$ sudo ufw enable
     ```
 
-    ​
+    
 
 36. 查看端口
 
@@ -546,7 +546,7 @@ sudo vi /etc/hostname
     $ chsh -s /bin/bash deploy
     ```
 
-    ​
+    
 
     准备工作，安装如下工具
 
