@@ -20,9 +20,21 @@ celery是一个基于分布式消息传输的异步任务队列，它专注于�
 
 ![1568114936497](assets/1568114936497.png)
 
-#### 准备工作
+#### celery + rabbitmq初步
 
-在本文中，我们使用celery的消息代理和后端存储数据库都使用redis，序列化和反序列化选择msgpack。
+我们先不在继承框架如flask或django中使用celery，而仅仅单独使用。
+
+##### 简单介绍
+
+celery是一个异步任务队列，一个celery有三个核心组件：
+
+- Celery客户端：用于发布后台作业；当与Flask一起工作的时候，客户端与Flask一起运行。
+
+- Celery workers：运行后台作业的进程。Celery支持本地和远程workers，可以在本地服务器上启动一个单独的worker，也可以在远程服务器上启动worker，需要拷贝代码。
+
+- 消息代理：客户端通过消息队列和workers进行通信，Celery支持多种方式来实现这些队列。最常用的代理就是RabbitMQ和Redis。
+
+  
 
 
 
