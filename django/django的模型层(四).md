@@ -28,3 +28,162 @@ class Group(models.Model):
 
 ![](assets/20190917172542435_1444920613.png =596x)
 然后我在数据库中添加了下面的Person对象：
+![](assets/20190917172853998_2104042777.png =628x)
+
+再添加下面的Group对象：
+![](assets/20190917173011652_1565631431.png =624x)
+
+让我们来看看中间表是什么样子的：
+![](assets/20190917173114450_1760217740.png =831x)
+
+首先有一列id，这里是Django默认添加的，然后是Group和Person的id列，这里是默认情况下，Djago关联两张表的方式。如果你要设置关联的列，可以使用to_field参数。
+
+可见在中间表，并不是将两张表的数据都保存在一起，而是通过id的关系进行映射。
+
+
+
+### 二、自定义中间表
+一般情况，普通的多对多已经够用，无需自己创建第三张关系表。但是某些情况可能更复杂一点，比如如果你想保存某个人加入某个分组的时间呢？想保存进组的原因呢？
+
+Django提供了一个through参数，用于指定中间模型，你可以将类似进组时间，邀请原因等其他字段放在这个中间模型内。例子如下：
+
+```python
+from django.db import models
+
+class Person(models.Model):
+    name = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.name
+
+class Group(models.Model):
+    name = models.CharField(max_length=128)
+    members = models.ManyToManyField(Person,through="Membership")
+
+    def __str__(self):
+        return self.name
+
+class Membership(models.Model):
+    person = model.ForeignKey(Person,on_delete=models.CASCADE)
+    group = model.ForeignKey(Group,on_delete=models.CASCADE)
+    date_joined = models.DateField() # 进组时间
+    invite_reson = models.CharField(max_length=64) # 邀请原因
+```
+在中间表中，我们至少要编写两个外键字段，分别指向关联的两个模型。在本例中就是"Person"和“Group”。这里，我们额外增加了‘date_joined’字段，用于保存人员进组的时间，“invite_reson”字段用于保存邀请进组的原因。
+
+下面我们依然在数据库中实际查看一下(应用名为app2)
+![](assets/20190917174831292_1038037368.png =495x)
+
+注意中间表的名字已经变为"app2_membership"了。
+![](assets/20190917174929087_1633222605.png =518x)
+
+![](assets/20190917175002509_445561193.png =533x)
+
+**Person和Group没有变化。**
+
+
+![](assets/20190917175102765_1595146662.png =975x)
+
+但是中间表就截然不同了！它完美保存了我们需要的内容。
+
+
+### 三、使用中间表
+针对上面的中间表，下面是一些使用的例子(以欧洲著名的甲壳虫乐队成员为例)：
+```python
+>>> ringo = Person.objects.create(name="Ringo Starr")
+>>> paul = Person.objects.create(name="Paul McCartney")
+>>> beatles = Group.objects.create(name="The Beatles")
+>>> m1 = Membership(person=ringo, group=beatles,
+... date_joined=date(1962, 8, 16),
+... invite_reason="Needed a new drummer.")
+>>> m1.save()
+>>> beatles.members.all()
+<QuerySet [<Person: Ringo Starr>]>
+>>> ringo.group_set.all()
+<QuerySet [<Group: The Beatles>]>
+>>> m2 = Membership.objects.create(person=paul, group=beatles,
+... date_joined=date(1960, 8, 1),
+... invite_reason="Wanted to form a band.")
+>>> beatles.members.all()
+<QuerySet [<Person: Ringo Starr>, <Person: Paul McCartney>]>
+```
+
+与普通的多对多不一样，使用自定义中间表的多对多不能使用add(), create(),remove(),和set()方法来创建、删除关系，看下面：
+
+```
+>>> # 无效
+>>> beatles.members.add(john)
+>>> # 无效
+>>> beatles.members.create(name="George Harrison")
+>>> # 无效
+>>> beatles.members.set([john, paul, ringo, george])
+```
+
+为什么？因为上面的方法无法提供加入时间、邀请原因等中间模型需要的字段内容。唯一的办法只能是通过创建中间模型的实例来创建这种类型的多对多关联。但是，clear()方法是有效的，它能清空所有的多对多关系。
+
+```
+>>> # 甲壳虫乐队解散了
+>>> beatles.members.clear()
+>>> # 删除了中间模型的对象
+>>> Membership.objects.all()
+<QuerySet []>
+```
+
+一旦你通过创建中间模型实例的方法建立了多对多的关联，你立刻就可以像普通的多对多那样进行查询操作：
+```
+# 查找组内有Paul这个人的所有的组（以Paul开头的名字）
+>>> Group.objects.filter(members__name__startswith='Paul')
+<QuerySet [<Group: The Beatles>]>
+```
+可以使用中间模型的属性进行查询：
+```
+# 查找甲壳虫乐队中加入日期在1961年1月1日之后的成员
+>>> Person.objects.filter(
+... group__name='The Beatles',
+... membership__date_joined__gt=date(1961,1,1))
+<QuerySet [<Person: Ringo Starr]>
+```
+可以像普通模型一样使用中间模型：
+
+```
+>>> ringos_membership = Membership.objects.get(group=beatles, person=ringo)
+>>> ringos_membership.date_joined
+datetime.date(1962, 8, 16)
+>>> ringos_membership.invite_reason
+'Needed a new drummer.'
+>>> ringos_membership = ringo.membership_set.get(group=beatles)
+>>> ringos_membership.date_joined
+datetime.date(1962, 8, 16)
+>>> ringos_membership.invite_reason
+'Needed a new drummer.'
+```
+
+这一部分内容，需要结合后面的模型query，如果暂时看不懂，没有关系。
+
+对于中间表，有一点要注意（在前面章节已经介绍过，再次重申一下），默认情况下，中间模型只能包含一个指向源模型的外键关系，上面例子中，也就是在Membership中只能有Person和Group外键关系各一个，不能多。否则，你必须显式的通过`ManyToManyField.through_fields`参数指定关联的对象。参考下面的例子：
+
+```python
+from django.db import models
+
+class Person(models.Model):
+    name = models.CharField(max_length=50)
+
+class Group(models.Model):
+    name = models.CharField(max_length=128)
+    members = models.ManyToManyField(
+    Person,
+    through='Membership',
+    through_fields=('group', 'person'),
+    )
+
+class Membership(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    inviter = models.ForeignKey(
+    Person,
+    on_delete=models.CASCADE,
+    related_name="membership_invites",
+    )
+    invite_reason = models.CharField(max_length=64)
+
+```
