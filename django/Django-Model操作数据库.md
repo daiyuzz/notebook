@@ -34,11 +34,18 @@ models.UserInfo.objects.create(user='yangmv',pwd='123456')
 obj = models.UserInfo(user='yangmv',pwd='123456')
 obj.save()
 ```
+
 或者
 ```python
 dic = {'user':'yangmv','pwd':'123456'}
 models.UserInfo.objects.create(**dic)
 ```
+获取刚上传数据的id可使用
+```python
+n = models.UserInfo.objects.create(user='yangmv',pwd='123456')
+n.id
+```
+
 
 
 ### 3、删
@@ -47,7 +54,7 @@ models.UserInfo.objects.filter(user='yangmv').delete()
 
 ```
 
-####  4、改
+###  4、改
 
 ```python
 models.UserInfo.objects.filter(user='yangmv').update(pwd='520')
