@@ -230,6 +230,26 @@
             "name": "Django-Model操作数据库.md",
             "tags": [
             ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-09-30T07:49:54Z",
+            "modified_time": "2019-09-30T08:22:14Z",
+            "name": "django内置函数发送邮件.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-09-30T08:49:46Z",
+            "modified_time": "2019-09-30T11:20:26Z",
+            "name": "celery异步任务.md",
+            "tags": [
+            ]
         }
     ],
     "sub_directories": [
