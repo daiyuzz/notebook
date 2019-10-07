@@ -1,3 +1,4 @@
+vnote_backup_file_826537664 /home/daiyu/notebook/爬虫/概念知识/splash的使用.md
 # splash的使用
 
 Splash是一个JavaScript渲染服务，是一个HTTP API的轻量级浏览器，同时它对接了Python的的Twisted和QT库。利用它，我们同样可以实现动态渲染页面的抓取。
