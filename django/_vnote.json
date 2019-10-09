@@ -250,6 +250,16 @@
             "name": "celery异步任务.md",
             "tags": [
             ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-10-09T08:00:53Z",
+            "modified_time": "2019-10-09T08:22:58Z",
+            "name": "Django部署.md",
+            "tags": [
+            ]
         }
     ],
     "sub_directories": [
