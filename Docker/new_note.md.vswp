@@ -1,0 +1,20 @@
+vnote_backup_file_826537664 /home/daiyu/notebook/Docker/new_note.md
+# new_note
+
+docker run --name cat-cql2elm -d cqframework/cql-translation-service:v1.3.15
+docker run --name cat-mongo -d mongo:3.4
+docker run --name cat \
+  --link cat-cql2elm:cql2elm \
+  --link cat-mongo:mongo \
+  -e "CQL_TO_ELM_URL=http://cql2elm:8080/cql/translator" \
+  -e "MONGO_URL=mongodb://mongo/cds_authoring" \
+  -e "AUTH_SESSION_SECRET=secret" \
+  -e "AUTH_LDAP_URL=ldap://localhost:389" \
+  -e "AUTH_LDAP_BIND_DN=cn=root" \
+  -e "AUTH_LDAP_BIND_CREDENTIALS={{dai1993}}" \
+  -e "AUTH_LDAP_SEARCH_BASE=ou=passport-ldapauth" \
+  -e "AUTH_LDAP_SEARCH_FILTER=(uid={{yuxing.dai}})" \
+  -e "NODE_ENV=development" \
+  -p "3001:3001" \
+  -p "9000:9000" \
+  cdsauthoringtool

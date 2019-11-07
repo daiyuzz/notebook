@@ -744,3 +744,70 @@ dtype: float64
 
 Series索引（obj[...]）的工作方式类似于NumPy数组的索引，只不过Series的索引值不只是整数。下面是几个例子：
 
+```python
+In [117]: obj = pd.Series(np.arange(4.), index=['a', 'b', 'c', 'd'])
+
+In [118]: obj
+Out[118]: 
+a    0.0
+b    1.0
+c    2.0
+d    3.0
+dtype: float64
+
+In [119]: obj['b']
+Out[119]: 1.0
+
+In [120]: obj[1]
+Out[120]: 1.0
+
+In [121]: obj[2:4]
+Out[121]: 
+c    2.0
+d    3.0
+dtype: float64
+
+In [122]: obj[['b', 'a', 'd']]
+Out[122]:
+b    1.0
+a    0.0
+d    3.0
+dtype: float64
+
+In [123]: obj[[1, 3]]
+Out[123]: 
+b    1.0
+d    3.0
+dtype: float64
+
+In [124]: obj[obj < 2]
+Out[124]: 
+a    0.0
+b    1.0
+dtype: float64
+```
+
+利用标签的切片运算与普通的python切片运算不同，其末端是包含的：
+```python
+In [125]: obj['b':'c']
+Out[125]:
+b    1.0
+c    2.0
+dtype: float64
+```
+
+
+
+
+### 使用loc和iloc进行选取
+
+对于DataFrame的行的标签索引，我引入了特殊的标签运算符loc和iloc。他们可以让你用类似Numpy的标记，使用轴标签（loc）或整数索引（iloc），从DataFrame选择列和行的子集。
+
+作为一个初步示例，让我们通过标签选择一行或多列：
+```python
+In [137]: data.loc['Colorado', ['two', 'three']]
+Out[137]: 
+two      5
+three    6
+Name: Colorado, dtype: int64
+```
