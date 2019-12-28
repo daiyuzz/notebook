@@ -35,6 +35,12 @@
         },
         {
             "name": "Docker"
+        },
+        {
+            "name": "java"
+        },
+        {
+            "name": "Js"
         }
     ],
     "tags": [
