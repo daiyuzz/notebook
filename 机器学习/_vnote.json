@@ -60,6 +60,26 @@
             "name": "机器学习实战-决策树.md",
             "tags": [
             ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-12-27T06:34:26Z",
+            "modified_time": "2019-12-27T06:54:52Z",
+            "name": "day01 数据预处理.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-12-27T06:58:31Z",
+            "modified_time": "2019-12-27T06:58:46Z",
+            "name": "day02 简单线性回归模型.md",
+            "tags": [
+            ]
         }
     ],
     "sub_directories": [

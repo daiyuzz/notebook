@@ -116,3 +116,68 @@ python中常用的异常处理语法是try except else finally,他们可以有�
 ## 建议29:区别对待可变对象和不可变对象
 
 ## 建议31:记住函数传参既不是传值也不是传引用
+
+
+
+## 建议39:使用Counter进行计数统计
+### 使用dict
+```python
+some_data = ['a', '2', 2, 4, 5, '2', 'b', 4, 7, 'a', 5, 'd', 'a', 'z']
+count_frq = dict()
+for item in some_data:
+    if item in count_frq:
+        count_frq[item] += 1
+    else:
+        count_frq[item] = 1
+
+print(count_frq)
+#{'a': 3, '2': 2, 2: 1, 4: 2, 5: 2, 'b': 1, 7: 1, 'd': 1, 'z': 1}
+```
+
+### 使用defaultdict
+```python
+# 使用defaultdict
+
+from collections import defaultdict
+
+some_data = ['a', '2', 2, 4, 5, '2', 'b', 4, 7, 'a', 5, 'd', 'a', 'z']
+
+count_frq = defaultdict(int)
+for item in some_data:
+    count_frq[item] += 1
+
+print(count_frq)
+
+# defaultdict(<class 'int'>, {'a': 3, '2': 2, 2: 1, 4: 2, 5: 2, 'b': 1, 7: 1, 'd': 1, 'z': 1})
+
+```
+
+### 使用set和list
+```python
+some_data = ['a', '2', 2, 4, 5, '2', 'b', 4, 7, 'a', 5, 'd', 'a', 'z']
+count_set = set(some_data)
+count_list = []
+for item in count_set:
+    count_list.append((item, some_data.count(item)))
+
+
+# [(2, 1), (4, 2), (5, 2), (7, 1), ('z', 1), ('2', 2), ('d', 1), ('b', 1), ('a', 3)]
+
+```
+
+### collections.Counter(推荐)
+```python
+from collections import Counter
+some_data = ['a', '2', 2, 4, 5, '2', 'b', 4, 7, 'a', 5, 'd', 'a', 'z']
+print(Counter(some_data))
+//使用elements()方法来获取Counter中的值
+print(list(Counter(some_data).elements()))
+//利用most_common()方法可以找出前N个出现频率最高的元素以及他们对应的次数
+print(Counter(some_data).most_common(2))
+print(Counter(some_data)['a'])
+
+#Counter({'a': 3, '2': 2, 4: 2, 5: 2, 2: 1, 'b': 1, 7: 1, 'd': 1, 'z': 1})
+#['a', 'a', 'a', '2', '2', 2, 4, 4, 5, 5, 'b', 7, 'd', 'z']
+#[('a', 3), ('2', 2)]
+# 3
+```
