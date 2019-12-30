@@ -15,4 +15,4 @@ flask_wtf : 自带CSRF保护功能,强制 程序员设置秘钥
 CsrfViewMiddleware 实现自动保护
 
 1. 生成token值
-2. 验证token值
+df2. 验证token值
