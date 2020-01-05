@@ -80,6 +80,36 @@
             "name": "day02 简单线性回归模型.md",
             "tags": [
             ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-12-28T06:58:31Z",
+            "modified_time": "2019-12-30T03:17:40Z",
+            "name": "day03 多元线性回归.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-12-30T03:26:57Z",
+            "modified_time": "2019-12-30T03:56:38Z",
+            "name": "day04 逻辑回归.md",
+            "tags": [
+            ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2019-12-30T03:58:54Z",
+            "modified_time": "2019-12-30T05:43:18Z",
+            "name": "数据预处理之将类别数据数字化的方法.md",
+            "tags": [
+            ]
         }
     ],
     "sub_directories": [

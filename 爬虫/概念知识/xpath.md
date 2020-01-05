@@ -30,3 +30,6 @@ for toc in toctree:
     prin
 ```
 
+## 提取某个节点下的所有文本
+使用`string`
+`data.xpath('string(path)')`
