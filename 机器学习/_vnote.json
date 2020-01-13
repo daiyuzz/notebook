@@ -110,6 +110,16 @@
             "name": "数据预处理之将类别数据数字化的方法.md",
             "tags": [
             ]
+        },
+        {
+            "attachment_folder": "",
+            "attachments": [
+            ],
+            "created_time": "2020-01-06T12:35:53Z",
+            "modified_time": "2020-01-06T12:37:54Z",
+            "name": "day07 k近邻算法.md",
+            "tags": [
+            ]
         }
     ],
     "sub_directories": [
