@@ -392,4 +392,265 @@ Java 泛型的实现方式不太优雅,但这是因为泛型是在 JDK5 时代�
 
 
 ## 类型边界
-[fanxing](https://dunwu.github.io/javacore/#/basics/java-generic)
+
+有时候可能希望限制可在参数化类型中用作类型参数的类型. `类型边界` 可以对泛型的类型参数设置限制条件. 例如,对数字进行操作的方法可能只接受 `Number`或其子类的实例.
+
+要声明有界类型参数,请列出类型参数的名称,然后是 `extends`关键字,后跟其限制类或接口.
+
+类型边界的语法形式如下:
+`<T extends XXX>`
+
+示例:
+```java
+public class GenericsExtendsDemo01 {
+    static <T extends Comparable<T>> T max(T x,T y,T z){
+        T max = x;
+        if (y.compareTo(max)>0){
+            max = y;
+        }
+        if (z.compareTo(max)>0){
+            max = z;
+        }
+        return max;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(max(3,4,5));
+        System.out.println(max(6.6,8.8,7.7));
+        System.out.println(max("pear","apple","Orange"));
+    }
+}
+// 5
+// 8.8
+// pear
+
+```
+上面的示例声明了一个泛型方法,类型参数 `T extends Comparable<T>` 表明传入方法中的类型必须实现了 Comparable 接口
+
+类型边界可以设置多个,语法形式如下:
+
+`<T extends B1 & B2 & B3>`
+
+```
+注意:extends关键字后面的第一个类型参数可以是类或接口,其他类型参数只能是接口.
+```
+
+
+## 类型通配符
+`类型通配符`一般使用`?`代替具体的类型参数.例如,`List<?>`在逻辑上是 `List<String>`,`List<Integer>`等所有 `List<具体类型实参>`的父类.
+
+### 上界通配符
+可以使用`上界通配符`来缩小类型参数的类型范围
+
+它的语法形式为:`<? extends Number>`
+
+```java
+import java.util.Arrays;
+import java.util.List;
+
+public class GenericsUpperBoundedWildcardDemo {
+    public static double sumOfList(List<? extends Number> list) {
+        double s = 0.0;
+        for (Number n : list) {
+            s += n.doubleValue();
+        }
+        return s;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> li = Arrays.asList(1,2,3);
+        System.out.println("sum = "+ sumOfList(li));
+    }
+}
+// sum = 6.0
+```
+
+### 下界通配符
+
+`下界通配符` 将为之类型限制为该类型的特定类型或超类类型.
+
+`注意:上界通配符和下界通配符不能同时使用`
+
+它的语法形式为`<? super Number>`
+
+```java
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class GenericsLowerBoundeedWildcardDemo {
+    public static void addNumbers(List<? super Integer> list){
+        for (int i = 1;i<= 5;i++){
+            list.add(i);
+        }
+    }
+
+    public static void main(String[] args) {
+        List<Integer> list = new ArrayList<>();
+        addNumbers(list);
+        System.out.println(Arrays.deepToString(list.toArray()));
+    }
+}
+
+// [1, 2, 3, 4, 5]
+```
+
+### 无界通配符
+无界通配符有两种应用场景:
+
+- 可以使用 Object 类中提供的功能来实现的方法
+- 使用不依赖于类型参数的泛型类中的方法
+
+语法形式:`<?>`
+
+```java
+import java.util.Arrays;
+import java.util.List;
+
+public class GenericsUnboundedWildcardDemo {
+    public static void printList(List<?> list){
+        for (Object elem: list){
+            System.out.println(elem+ " ");
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+        List<Integer> li = Arrays.asList(1,2,3);
+        List<String> ls = Arrays.asList("one","two","three");
+        printList(li);
+        printList(ls);
+    }
+}
+
+// 1 2 3
+// one two three
+```
+
+
+### 通配符和向上转型
+
+前面我们提到:`泛型不能向上转型.但是,我们可以通过使用通配符来向上转型`
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class GenericsWildcardDemo {
+    public static void main(String[] args){
+        List<Integer> intList = new ArrayList<>();
+        List<Number> numberList = intList; // Error
+        
+        List<? extends Integer> intList2 = new ArrayList<>();
+        List<? extends Number> numList2 = intList2; // ok
+        
+    }
+}
+
+
+```
+
+## 泛型约束
+
+- 泛型类型的类型参数不能是值类型
+
+```java
+Pair<int,char> p = new Pair<>(8,'a'); //编译错误
+```
+
+- 不能创建类型参数的实例
+
+```java
+public static <E> void append(List<E> list){
+    E elem = new E(); // 编译错误
+    list.add(elem);
+}
+```
+
+- 不能声明类型为类型参数的静态成员
+
+```java
+public class MobileDevice<T>{
+    private static T os; // error
+}
+
+```
+
+- 类型参数不能使用类型转化或 `instanceof`
+- 
+```java
+public static <E> void rtti(List<E> list){
+    if (list instanceof ArrayList<Integer>){ //编译错误
+    }
+}
+
+```
+
+```java
+List<Integer> li = new ArrayList<>();
+List<Number> ln = (List<number>) li; //编译错误
+```
+
+
+- 不能创建类型参数的数组
+```java
+List<Integer>[] arrayOfLists = new List<Integer>[2]; // 编译错误
+```
+
+- 不能创建 `catch`或`throw`参数化类型对象
+
+```java
+class MathException<T> extends Exception{} // 编译错误
+
+class QueueFullException<T> extends Throwable{} //编译错误
+
+```
+
+```java
+public static <T extends Exception,J> void execute(List<J> jobs){
+    try{
+        for(J job:jobs)
+        //...
+    }catch(T e){    // error
+        //...
+    }
+{
+
+```
+
+
+- 仅仅是泛型类相同,而类型参数不同的方法不能重载
+
+```java
+public class Example{
+    public void print(Set<String> strSet){}
+    public void print(Set<Integer> intSet {}  //编译错误
+}
+
+```
+
+## 泛型最佳实践
+
+### 泛型命名
+泛型一些约定俗成的命名:
+- E - Element
+- K - Key
+- N - Number
+- T - Type
+- V - value
+- S,U,V etc. - 2nd,3rd,4th types
+
+
+### 使用泛型的建议
+
+- 消除类型检查警告
+- List 优先于数组
+- 优先考虑使用泛型来提高代码通用性
+- 优先考虑泛型方法来限定泛型的范围
+- 利用有限制通配符来提升 API 的灵活性
+- 优先考虑类型安全的异构容器
+
+
+## 小结
+
+![](assets/20200114143100320_1363940106.png =1000x)

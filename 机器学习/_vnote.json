@@ -115,11 +115,6 @@
             "attachment_folder": "",
             "attachments": [
             ],
-
-            "created_time": "2020-01-06T12:35:53Z",
-            "modified_time": "2020-01-06T12:37:54Z",
-            "name": "day07 k近邻算法.md",
-
             "created_time": "2020-01-08T14:00:14Z",
             "modified_time": "2020-01-08T14:30:49Z",
             "name": "支持向量机是什么意思？.md",
@@ -128,6 +123,9 @@
         }
     ],
     "sub_directories": [
+        {
+            "name": "sklearn 系列"
+        }
     ],
     "version": "1"
 }
