@@ -92,3 +92,38 @@ HTML 约束验证基于:
 | validity          | 包含与input元素的合法性相关的布尔属性      |
 | validationMessage | 包含当 validity 为false时浏览器显示的消息 |
 | willValidate      | 指示是否验证 input 元素                 |
+
+## 合法性属性
+input 元素的 `validity`属性包含了与数据合法性相关的一系列属性:
+
+|       属性       |                               描述                                |
+| --------------- | ----------------------------------------------------------------- |
+| customError     | 设置为true,如果设置自定义的合法性消息                                  |
+| patternMismatch | 设置为true,如果元素值不匹配其 pattern属性                             |
+| rangeOverflow   | 设置为true,如果元素值大于其max属性                                    |
+| rangeMismatch   | 设置为true,如果元素值小于其min属性                                    |
+| stepMismatch    | 当字段拥有step属性,且输入的value值不符合设定的时间间隔,该属性值为true      |
+| tooLong         | 设置为 true，如果元素值超过了其 maxLength 属性。                       |
+| typeMismatch    | 当字段的 type 是 email 或者 url 但输入的值不是正确的类型时，属性值为 true |
+| valueMissing    | 设置为 true，如果元素（包含 required）没有值                           |
+| valid           | 设置为 true，如果元素值是有效的。                                     |
+
+
+
+实例:
+
+```JavaScript
+<input id="id1" type="number" max="10">
+<button onclick="myFunction()">OK</button>
+<p id="demo"></p>
+
+<script>
+    function myFunction(){
+        var txt = "";
+        if(document.getElementById("id1").validity.rangeOverflow){
+            txt = "值太大";
+        }
+        document.getElementById("demo").innerHTML = txt;
+    }
+</script>
+```

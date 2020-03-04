@@ -26,7 +26,8 @@ Item：从页面中提取的数据对象
 
 ```
 
-![Selection_002](/home/dyx/Pictures/Selection_002.bmp)
+![](assets/20200212101836308_758874861.png =800x)
+
 
 ```python
 #流程：

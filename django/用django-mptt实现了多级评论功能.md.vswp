@@ -1,0 +1,511 @@
+vnote_backup_file_826537664 /home/daiyu/notebook/django/用django-mptt实现了多级评论功能.md
+# 用django-mptt实现了多级评论功能
+
+多级评论意味着你需要将模型重新组织为**树形结构**."树根"是一级评论,而众多"树叶"则是次级评论.
+本教程会以`django-mptt`为基础,开发多级评论功能.
+```
+django-mptt模块包含了树形数据结构以及查询, 修改树形数据众多方法.
+任何需要树形结构吧,都可以用 django-mptt 来搭建.比如目录
+```
+
+## 重构模型
+既然要建立树型结构,老的评论模型肯定是要修改了.
+
+首先安装`django-mptt`
+`pip install django-mptt`
+
+安装成功后,在配置中注册
+```python
+my_blog/settings.py
+
+...
+INSTALLED_APPS = [
+    ...
+    'mptt',
+
+    ...
+]
+...
+
+```
+接下来,修改**评论模型**
+
+```python
+comment/models.py
+
+...
+# django-mptt
+from mptt.models import MPTTModel, TreeForeignKey
+
+# 替换 models.Model 为 MPTTModel
+class Comment(MPTTModel):
+    ...
+
+    # 新增，mptt树形结构
+    parent = TreeForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children'
+    )
+
+    # 新增，记录二级评论回复给谁, str
+    reply_to = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='replyers'
+    )
+
+    # 替换 Meta 为 MPTTMeta
+    # class Meta:
+    #     ordering = ('created',)
+    class MPTTMeta:
+        order_insertion_by = ['created']
+
+    ...
+
+```
+先引入`MPTT`相关模块,然后改动下列几个位置:
+- 模型**不再继承**内置的`models.Model`类,替换为`MPTTModel`,因此你的模型会自动拥有了几个用于树型算法的新字段
+- `parent`字段是必须定义的,用于存储数据之间的关系,不要去修改它.
+- `reply_to`外键用于存储**被评论人**
+- 将`class Meta`替换为`class MPTTMeta`参数也有小的变化,这是模型的默认设定,实际功能相同.
+
+这些改动大部分都是`django-mptt`文档的默认设置.需要说名的是这个`reply_to`
+
+先思考一下,多级评论是否允许无限级数? 无限级数听起来很美好,但是嵌套的层级如果过多,反而会导致结构混乱,并且难以排版.所以这里就`限制评论最多能两级`,超过两级的评论一律置为两级,然后再将实际的被评论人存储在`reply_to`字段中.
+
+```
+举例说明：一级评论人为 a，二级评论人为 b（parent 为 a），三级评论人为 c（parent 为 b）。因为我们不允许评论超过两级，因此将 c 的 parent 重置为 a，reply_to 记录为 b，这样就能正确追溯真正的被评论者了。
+```
+模型修改完了,添加很多非空字段进去,因此做好**先清空所有的评论数据**,再迁移数据.
+
+
+## 视图
+前面章节已经写过一个视图`post_comment`用于评论处理,我们将**复用**它,以求精简代码.
+
+```python
+comment/views.py
+
+...
+# 记得引入 Comment ！
+from .models import Comment
+
+...
+@login_required(login_url='/userprofile/login/')
+# 新增参数 parent_comment_id
+def post_comment(request, article_id, parent_comment_id=None):
+    article = get_object_or_404(ArticlePost, id=article_id)
+
+    # 处理 POST 请求
+    if request.method == 'POST':
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            new_comment = comment_form.save(commit=False)
+            new_comment.article = article
+            new_comment.user = request.user
+
+            # 二级回复
+            if parent_comment_id:
+                parent_comment = Comment.objects.get(id=parent_comment_id)
+                # 若回复层级超过二级，则转换为二级
+                new_comment.parent_id = parent_comment.get_root().id
+                # 被回复人
+                new_comment.reply_to = parent_comment.user
+                new_comment.save()
+                return HttpResponse('200 OK')
+
+            new_comment.save()
+            return redirect(article)
+        else:
+            return HttpResponse("表单内容有误，请重新填写。")
+    # 处理 GET 请求
+    elif request.method == 'GET':
+        comment_form = CommentForm()
+        context = {
+            'comment_form': comment_form,
+            'article_id': article_id,
+            'parent_comment_id': parent_comment_id
+        }
+        return render(request, 'comment/reply.html', context)
+    # 处理其他请求
+    else:
+        return HttpResponse("仅接受GET/POST请求。")
+```
+
+主要变化有3个地方:
+- 视图的参数**新增了**`parent_comment_id=None`.此参数代表`父评论`的`id`值,若`None`则表示评论为一级评论,若有具体值则为多级评论
+- 如果视图处理的是多级评论,则用`MPTT`的`get_root()`方法将其**父级重置为树形结构最底部的一级评论**,然后在`reply_to`中保存实际的被回复人并保存.视图最终返回的是`HttpResponse`字符串,后面会用到.
+- 新增处理`GET`请求逻辑,用于**给二级回复提供空白的表单**.后面会用到.
+
+很好,现在视图中有一个`parent_comment_id`参数用于区分多级评论,因此就要求有的`url`传入此参数,有的不传入,像下面这样:
+
+```python
+comment/urls.py
+
+...
+urlpatterns = [
+    # 已有代码，处理一级回复
+    path('post-comment/<int:article_id>', views.post_comment, name='post_comment'),
+    # 新增代码，处理二级回复
+    path('post-comment/<int:article_id>/<int:parent_comment_id>', views.post_comment, name='comment_reply')
+]
+```
+
+两个`path`都使用了**同一个视图函数**，但是传入的**参数却不一样多**，仔细看。第一个path没有parent_comment_id参数，因此视图就使用了**缺省值**None，达到了区分评论层级的目的。
+
+## 前端渲染
+在前端的逻辑上,我们的理想很丰满:
+- 二级回复同样要使用富文本编辑器
+- 回复时不能离开当前页面
+- 多个ckeditor加载时,不能有性能问题
+
+然而理想越丰满,写代码就越痛苦
+首先就是`detail.html`的代码要大概,主要集中在**显示评论部分**以及相关的`JavaScript`.
+
+```html
+templates/article/detail.html
+
+...
+
+<!-- 改动 显示评论 部分 -->
+<!-- 不要漏了 load mptt_tags！ -->
+{% load mptt_tags %}
+<h4>共有{{ comments.count }}条评论</h4>
+<div class="row">
+    <!-- 遍历树形结构 -->
+    {% recursetree comments %}
+        <!-- 给 node 取个别名 comment -->
+        {% with comment=node %}
+            <div class="{% if comment.reply_to %}
+                        offset-1 col-11
+                        {% else %}
+                        col-12
+                        {% endif %}"
+            >
+                <hr>
+                <p>
+                    <strong style="color: pink">
+                        {{ comment.user }}
+                    </strong> 
+
+                    {% if comment.reply_to %}
+                        <i class="far fa-arrow-alt-circle-right" 
+                           style="color: cornflowerblue;"
+                        ></i>
+                        <strong style="color: pink">
+                            {{ comment.reply_to }}
+                        </strong> 
+                    {% endif %}
+
+                </p>
+                <div>{{ comment.body|safe }}</div>
+
+                <div>
+                    <span style="color: gray">
+                        {{ comment.created|date:"Y-m-d H:i" }}
+                    </span>
+
+                    <!-- 加载 modal 的按钮 -->
+                    {% if user.is_authenticated %}
+                    <button type="button" 
+                            class="btn btn-light btn-sm text-muted" 
+                            onclick="load_modal({{ article.id }}, {{ comment.id }})"
+                            >
+                        回复
+                    </button>
+                    {% else %}
+                    <a class="btn btn-light btn-sm text-muted" 
+                       href="{% url 'userprofile:login' %}"
+                       >
+                        回复
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Modal -->
+                <div class="modal fade" 
+                     id="comment_{{ comment.id }}" 
+                     tabindex="-1" 
+                     role="dialog" 
+                     aria-labelledby="CommentModalCenter" 
+                     aria-hidden="true"
+                >
+                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                        <div class="modal-content" style="height: 480px">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalCenterTitle">回复 {{ comment.user }}：</h5>
+                            </div>
+                            <div class="modal-body" id="modal_body_{{ comment.id }}"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {% if not comment.is_leaf_node %}
+                    <div class="children">
+                        {{ children }}
+                    </div>
+                {% endif %}
+            </div>
+
+
+        {% endwith %}
+    {% endrecursetree %}
+</div>
+
+...
+
+{% block script %}
+...
+
+<!-- 新增代码，唤醒二级回复的 modal -->
+<script>
+    // 加载 modal
+    function load_modal(article_id, comment_id) {
+        let modal_body = '#modal_body_' + comment_id;
+        let modal_id = '#comment_' + comment_id;
+
+        // 加载编辑器
+        if ($(modal_body).children().length === 0) {
+            let content = '<iframe src="/comment/post-comment/' + 
+                article_id + 
+                '/' + 
+                comment_id + 
+                '"' + 
+                ' frameborder="0" style="width: 100%; height: 100%;" id="iframe_' + 
+                comment_id + 
+                '"></iframe>';
+            $(modal_body).append(content);
+        };
+
+        $(modal_id).modal('show');
+    }
+</script>
+{% endblock script %}
+
+```
+让我们拆开来讲解
+
+### 遍历树
+第一个问题,如何遍历树形结构?
+`django-mptt`提供了一个快捷方式:
+```html
+{% load mptt_tags %}
+<ul>
+{% recursetree objs %}
+    <li>
+        {{ node.your_field }}
+        {% if not node.is_leaf_node %}
+            <ul class="children">
+                {{ children }}
+            </ul>
+            {% endif %}
+            </li>
+            {% endrecursetree %}
+</ul>
+```
+内部的实现你不用去管,当成一个黑盒子去用就好了.`objs`是需要遍历的**数据集**,`node`是其中的**单个数据**.有两个地方需要注意:
+- `{% load mptt_tags %}`不要忘记写
+- `node`这个变量名太宽泛,用`{% with comment=node %}`给它起个别名
+
+### Modal
+Modal是Bootstrap内置的弹窗.本文相关代码如下:
+
+```html
+<!-- 加载 modal 的按钮 -->
+{% if user.is_authenticated %}
+<button type="button" 
+        class="btn btn-light btn-sm text-muted" 
+        onclick="load_modal({{ article.id }}, {{ comment.id }})"
+        >
+    回复
+</button>
+{% else %}
+<a class="btn btn-light btn-sm text-muted" 
+   href="{% url 'userprofile:login' %}"
+   >
+    回复
+</a>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal fade" 
+     id="comment_{{ comment.id }}" 
+     tabindex="-1" 
+     role="dialog" 
+     aria-labelledby="CommentModalCenter" 
+     aria-hidden="true"
+     >
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content" style="height: 480px">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalCenterTitle">回复 {{ comment.user }}：</h5>
+            </div>
+            <div class="modal-body" id="modal_body_{{ comment.id }}"></div>
+        </div>
+    </div>
+</div>
+```
+注意,加载Modal的按钮用模板语法`{% if user.is_authenticated %}`对用户是否登录做了区分,目的是将未登录的用户因导至登录页面
+
+### 加载Modal
+
+最难理解的可能就是这段加载Modal的JavaScript代码了:
+
+```js
+// 加载 modal
+function load_modal(article_id, comment_id) {
+    let modal_body = '#modal_body_' + comment_id;
+    let modal_id = '#comment_' + comment_id;
+
+    // 加载编辑器
+    if ($(modal_body).children().length === 0) {
+        let content = '<iframe src="/comment/post-comment/' + 
+            article_id + 
+            '/' + 
+            comment_id + 
+            '" frameborder="0" style="width: 100%; height: 100%;"></iframe>';
+        $(modal_body).append(content);
+    };
+
+    $(modal_id).modal('show');
+}
+
+```
+实际上核心逻辑只有3步:
+- 点击回复按钮唤醒了`load_modal()`函数,并将文章id,父级评论id传递进去
+- `$(modal_body).append(content)`找到对应的Modal的容器,并将一个`iframe`容器动态添加进去
+- `$(modal_id).modal('show')`找到对应的Modal,并将其唤醒
+
+为什么`iframe`需要**动态加载**?这是为了**避免潜在的性能问题**.你确实可以在页面初始加载时把所有iframe都渲染好，但是这需要花费额外的时间，并且绝大部分的Modal用户根本不会用到，很不划算。
+
+if语句的作用是判断Modal中如果已经加载过，就不再重复加载了。
+
+最后，什么是`iframe`？这是`HTML5`中的新特性，可以理解成当前网页中嵌套的另一个独立的网页。既然是独立的网页，那自然也会独立的向后台请求数据。仔细看src中请求的位置，正是前面我们在urls.py中写好的第二个path。即对应了post_comment视图中的GET逻辑：
+
+```python
+comment/views.py
+
+def post_comment(request, article_id, parent_comment_id=None):
+    ...
+    # 处理 GET 请求
+    elif request.method == 'GET':
+        ...
+        return render(request, 'comment/reply.html', context)
+    ...
+```
+视图返回的comment/reply.html模板还没有写，接下来就把它写好。
+
+## Ajax提交表单
+在`templates`中新建`comment`目录，并新建`reply.html`，写入代码：
+
+```html
+templates/comment/reply.html
+
+<!-- 载入静态文件 -->
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+</head>
+
+<body>
+    <form 
+    action="." 
+    method="POST"
+    id="reply_form" 
+    >
+        {% csrf_token %}
+        <div class="form-group">
+            <div id="test">
+                {{ comment_form.media }}
+                {{ comment_form.body }}
+            </div>
+        </div>
+    </form>
+    <!-- 提交按钮 -->
+    <button onclick="confirm_submit({{ article_id }}, {{ parent_comment_id }})" class="btn btn-primary">发送</button>
+
+    <script src="{% static 'jquery/jquery-3.3.1.js' %}"></script>
+    <script src="{% static 'popper/popper-1.14.4.js' %}"></script>
+    <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
+
+    <!-- csrf token -->
+    <script src="{% static 'csrf.js' %}"></script>
+
+    <script>
+    $(function(){
+        $(".django-ckeditor-widget").removeAttr('style');
+    });
+
+    function confirm_submit(article_id, comment_id){
+        // 从 ckeditor 中取值
+        let content = CKEDITOR.instances['id_body'].getData();
+        // 调用 ajax 与后端交换数据
+        $.ajax({
+            url: '/comment/post-comment/' + article_id + '/' + comment_id,
+            type: 'POST',
+            data: {body: content},
+            // 成功回调
+            success: function(e){
+                if(e === '200 OK'){
+                    parent.location.reload();
+                }
+            }
+        })
+    }
+    </script>
+
+</body>
+</html>
+
+```
+
+这个模板的作用是提供一个ckeditor的编辑器，所以没有继承base.html。让我们拆开来讲。
+
+### Ajax是什么?
+
+这里会用到Ajax,倒不是因为其效率高,而是因为Ajax可以在表单提交成功后得到反馈,以便刷新页面.
+
+核心代码如下:
+```JavaScript
+function confirm_submit(article_id, comment_id){
+    // 从 ckeditor 中取值
+    let content = CKEDITOR.instances['id_body'].getData();
+    // 调用 ajax 与后端交换数据
+    $.ajax({
+        url: '/comment/post-comment/' + article_id + '/' + comment_id,
+        type: 'POST',
+        data: {body: content},
+        // 成功回调
+        success: function(e){
+            if(e === '200 OK'){
+                parent.location.reload();
+            }
+        }
+    })
+}
+
+```
+- `CKEDITOR`是编辑器提供的全局变量，这里用`CKEDITOR.instances['id_body'].getData()`取得当前编辑器中用户输入的内容。
+- 接下来调用了`Jquery`的`ajax`方法与视图进行数据交换。`ajax`中定义了视图的`url`、请求的方法、提交的数据。
+- `success`是`ajax`的回调函数。当得到视图的响应后执行内部的函数。
+
+### csrf问题
+代码中有一行:
+`<script src="{% static 'csrf.js' %}"></script>`
+
+没有这一行，后端会返回403 Forbidden错误，并且表单提交失败。
+
+还记得之前提交传统表单时的{% csrf_token %}吗？Django为了防止跨域攻击，要求表单必须提供这个token，验证提交者的身份。
+
+问题是在Ajax中怎么解决这个问题呢？一种方法就是在页面中插入这个csrf.js模块。
+
+csrf.js文件可以在[Github仓库下载](https://github.com/stacklens/django_blog_tutorial/blob/master/static/csrf.js)。
